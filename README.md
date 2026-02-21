@@ -85,7 +85,7 @@ The IMU model is derived from the WT901C datasheet (Allan variance figures). Liv
 ```bash
 # 1. Clone into your ROS 2 workspace
 cd ~/ros2_ws/src
-git clone https://github.com/<your-username>/hospital_sim.git
+git clone https://github.com/Narcis-Abella/hospital_sim.git
 
 # 2. Build
 cd ~/ros2_ws
@@ -153,4 +153,4 @@ MIT — see [LICENSE](LICENSE)
 ## Acknowledgements
 
 Original ROS 1 simulation environment by [@javicensaez](https://github.com/javicensaez/tracerSencillo) / SocialTech-Challenge.  
-ROS 2 migration, sensor stack extension, and noise modeling by [your name].
+ROS 2 migration, sensor stack extension, and noise modeling by Narcis Abella.
