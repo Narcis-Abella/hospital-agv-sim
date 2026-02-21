@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ─────────────────────────────────────────────────────────────────────
+       Livox Mid-360  —  Simulación con plugin nativo gpu_lidar de Gazebo
+       
+       Specs reales Mid-360:
+         FOV horizontal : 360°
+         FOV vertical   : -7° a +52°  (aprox. 59° totales, asimétrico)
+         Rango          : 0.1 m – 40 m
+         Canales        : 4 láseres físicos, ~200k pts/s efectivos
+         Update rate    : 10 Hz (paquete completo)
+         
+       Con gpu_lidar no podemos hacer el patrón no-repetitivo real,
+       pero aproximamos el FOV y la densidad de puntos.
+  ──────────────────────────────────────────────────────────────────────── -->
+
+  <xacro:macro name="sensor_livox_mid360" params="parent xyz:='0 0 0' rpy:='0 0 0'">
+
+    <link name="livox_mid360_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <!-- Caja aproximada al tamaño real del Mid-360: 65×65×60 mm -->
+          <box size="0.065 0.065 0.060"/>
+        </geometry>
+        <material name="dark_grey"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.065 0.065 0.060"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.265"/>  <!-- Peso real: 265 g -->
+        <inertia ixx="0.0005" ixy="0" ixz="0"
+                 iyy="0.0005" iyz="0"
+                 izz="0.0005"/>
+      </inertial>
+    </link>
+
+    <joint name="livox_mid360_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="livox_mid360_link"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+
+    <!-- ── Plugin Gazebo ─────────────────────────────────────────────── -->
+    <gazebo reference="livox_mid360_link">
+      <sensor name="livox_mid360" type="gpu_lidar">
+
+        <!-- Gazebo publica PointCloudPacked; el bridge ROS lo convierte a PC2 -->
+        <topic>livox_mid360</topic>
+        <ignition_msg_output_type>ignition.msgs.PointCloudPacked</ignition_msg_output_type>
+        <update_rate>10</update_rate>
+
+        <lidar>
+          <scan>
+            <!-- Horizontal: 360° completos -->
+            <horizontal>
+              <samples>400</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.14159265</min_angle>   <!-- -180° -->
+              <max_angle>3.14159265</max_angle>     <!--  180° -->
+            </horizontal>
+
+            <!-- Vertical: -7° a +52° (FOV real del Mid-360) -->
+            <!-- En radianes: -7° = -0.1222  |  +52° = 0.9076 -->
+            <vertical>
+              <samples>32</samples>
+              <resolution>1</resolution>
+              <min_angle>-0.1222</min_angle>
+              <max_angle>0.9076</max_angle>
+            </vertical>
+          </scan>
+
+          <range>
+            <min>0.10</min>
+            <max>40.0</max>
+            <resolution>0.002</resolution>  <!-- 2 mm resolución de rango -->
+          </range>
+
+          <!-- Simulación básica de ruido óptico (el nodo .cpp añade más) -->
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.002</stddev>
+          </noise>
+        </lidar>
+
+        <always_on>1</always_on>
+        <visualize>false</visualize>
+        <gz_frame_id>livox_mid360_link</gz_frame_id>
+      </sensor>
+    </gazebo>
+
+  </xacro:macro>
+</robot>

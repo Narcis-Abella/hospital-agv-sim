@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="sensor_livox_mid70" params="parent xyz:='0 0 0' rpy:='0 0 0'">
+  
+    <link name="livox_mid70_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.07 0.07 0.06"/> </geometry>
+        <material name="black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.07 0.07 0.06"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.5"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+    </link>
+
+    <joint name="livox_mid70_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="livox_mid70_link"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+    
+    <gazebo reference="livox_mid70_link">
+      <sensor name='livox_mid70' type='gpu_lidar'>
+        <topic>livox_mid70</topic>
+        <ignition_msg_output_type>ignition.msgs.PointCloudPacked</ignition_msg_output_type>
+        <update_rate>10</update_rate>
+        
+        <lidar>
+          <scan>
+            <horizontal>
+              <samples>100</samples>
+              <resolution>1</resolution>
+              <min_angle>-0.6109</min_angle>
+              <max_angle>0.6109</max_angle>
+            </horizontal> 
+            <vertical>
+              <samples>100</samples>
+              <resolution>1</resolution>
+              <min_angle>-0.6109</min_angle>
+              <max_angle>0.6109</max_angle>
+            </vertical>
+          </scan>
+          <range>
+            <min>0.10</min>
+            <max>40.0</max>
+            <resolution>0.002</resolution>
+          </range>
+        </lidar>
+        
+        <always_on>1</always_on>
+        <visualize>false</visualize>
+        <gz_frame_id>livox_mid70_link</gz_frame_id>
+      </sensor>
+    </gazebo>
+
+  </xacro:macro>
+</robot>

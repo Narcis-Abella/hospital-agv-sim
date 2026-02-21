@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <model name="checkpoint">
+    <static>true</static>
+    <link name="link">
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+            <radius>0.125</radius>
+            <length>0.0001</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.004 0.129 0.412 1</ambient>
+          <diffuse>0.004 0.129 0.412 1</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

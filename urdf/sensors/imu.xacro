@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="sensor_imu" params="parent xyz:='0 0 0' rpy:='0 0 0'">
+  
+    <link name="imu_link">
+      <visual>
+          <geometry>
+              <mesh filename="package://hospital_sim/meshes/imu_Link.STL" />
+          </geometry>
+          <material name="red"/>
+          <origin xyz="0 0 0" rpy="0 -1.5708 0"/>
+      </visual>
+    </link>
+    
+    <joint name="imu_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="imu_link"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+    </joint>
+    
+    <gazebo reference="imu_link">
+      <sensor name="imu_sensor" type="imu">
+        <always_on>1</always_on>
+        <update_rate>100</update_rate> 
+        <visualize>false</visualize>
+        <topic>imu</topic>
+        <gz_frame_id>imu_link</gz_frame_id>
+
+        <imu>
+          <angular_velocity>
+            <x><noise type="none"/></x>
+            <y><noise type="none"/></y>
+            <z><noise type="none"/></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><noise type="none"/></x>
+            <y><noise type="none"/></y>
+            <z><noise type="none"/></z>
+          </linear_acceleration>
+        </imu>
+
+      </sensor>
+    </gazebo>
+
+  </xacro:macro>
+</robot>
