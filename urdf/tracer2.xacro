@@ -74,10 +74,10 @@
 
   <xacro:tracer_odom parent="base_link" />
   <xacro:sensor_imu parent="base_link"            xyz="0 0 0.175" rpy="0 0 0"/>
-  <xacro:sensor_lidar parent="base_link"          xyz="-0.213 0 0.25" rpy="0 0 0"/>
+  <xacro:sensor_lidar parent="base_link"          xyz="0.0 0.0 0.32" rpy="0 0 0"/>
   <xacro:sensor_camera parent="base_link"         xyz="0.213 0 0.215" rpy="0 0 0"/>
   <xacro:sensor_livox_mid70 parent="base_link"    xyz="0.213 0 0.175" rpy="0 -0.2618 0"/>
-  <xacro:sensor_livox_mid360 parent="base_link"   xyz="0.0 0.0 0.25" rpy="0 0 0"/>
+  <xacro:sensor_livox_mid360 parent="base_link"   xyz="0.0 0.0 0.28" rpy="0 0 0"/>
 
 
 </robot>
