@@ -4,51 +4,54 @@
 #include <random>
 #include <cmath>
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LivoxNoiseNode
-//   Lee  /livox/points_raw  (PointCloud2 de Gazebo)
-//   Aplica ruido gaussiano proporcional a la distancia
-//   Publica /livox/points    (PointCloud2, listo para SLAM que acepte PC2)
-// ─────────────────────────────────────────────────────────────────────────────
-class LivoxNoiseNode : public rclcpp::Node {
+// Applies range-proportional radial Gaussian noise to Livox Mid-70 PointCloud2.
+//
+// Noise model: σ = max(min_noise, rel_noise * r), applied along line-of-sight.
+// Parameters match Livox Mid-70 datasheet ranging accuracy (±2 cm at 1–6 m).
+//
+// Topic routing:
+//   /livox_mid70/points_raw → [this node] → /livox_mid70/points
+class NoisyLivoxMid70Node : public rclcpp::Node {
 public:
-    LivoxNoiseNode() : Node("livox_noise_node") {
-        this->declare_parameter("rel_noise", 0.005); // 0.5% de la distancia
-        this->declare_parameter("min_noise", 0.002); // 2 mm mínimo
+    NoisyLivoxMid70Node() : Node("noisy_livox_mid70_node") {
 
-        rel_noise_ = this->get_parameter("rel_noise").as_double();
-        min_noise_ = this->get_parameter("min_noise").as_double();
+        // rel_noise: fraction of range used as σ (0.5% ≈ 2 cm at 4 m)
+        // min_noise: absolute noise floor regardless of range (2 mm)
+        this->declare_parameter("rel_noise", 0.005);
+        this->declare_parameter("min_noise", 0.002);
 
-        std::random_device rd;
-        gen_ = std::mt19937(rd());
+        rel_noise_ = static_cast<float>(this->get_parameter("rel_noise").as_double());
+        min_noise_ = static_cast<float>(this->get_parameter("min_noise").as_double());
+
+        gen_       = std::mt19937(std::random_device{}());
         dist_norm_ = std::normal_distribution<float>(0.0f, 1.0f);
 
-        // QoS BestEffort para compatibilidad con Gazebo
-        rclcpp::QoS qos(10);
-        qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
+        // Reliable QoS: matches parameter_bridge default output.
+        // Verify with: ros2 topic info /livox_mid70/points_raw --verbose
+        auto qos = rclcpp::QoS(10);
 
         sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
             "/livox_mid70/points_raw", qos,
-            std::bind(&LivoxNoiseNode::callback, this, std::placeholders::_1));
-
-        pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/livox_mid70/points", 10);
+            std::bind(&NoisyLivoxMid70Node::callback, this, std::placeholders::_1));
+        pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+            "/livox_mid70/points", qos);
 
         RCLCPP_INFO(this->get_logger(),
-            "Livox Noise Node started → /livox_mid70/points (PointCloud2). rel=%.3f min=%.3f",
-            rel_noise_, min_noise_);
+            "Livox Mid-70 noise node started — model: radial Gaussian "
+            "σ = max(%.3f m, %.1f%% of r)",
+            min_noise_, rel_noise_ * 100.0f);
     }
 
 private:
     void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-        // Copia del mensaje (header, campos, stride... todo igual)
+        // Shallow copy: same field layout, stride, and header.
+        // Only x/y/z bytes are modified via iterators.
         auto out = *msg;
 
-        // Iteradores de LECTURA sobre el mensaje original
         sensor_msgs::PointCloud2ConstIterator<float> in_x(*msg, "x");
         sensor_msgs::PointCloud2ConstIterator<float> in_y(*msg, "y");
         sensor_msgs::PointCloud2ConstIterator<float> in_z(*msg, "z");
 
-        // Iteradores de ESCRITURA sobre la copia
         sensor_msgs::PointCloud2Iterator<float> out_x(out, "x");
         sensor_msgs::PointCloud2Iterator<float> out_y(out, "y");
         sensor_msgs::PointCloud2Iterator<float> out_z(out, "z");
@@ -57,17 +60,18 @@ private:
              ++in_x, ++in_y, ++in_z,
              ++out_x, ++out_y, ++out_z)
         {
-            float x = *in_x, y = *in_y, z = *in_z;
+            const float x = *in_x, y = *in_y, z = *in_z;
 
+            // Pass through invalid returns unchanged.
             if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) continue;
 
-            float dist = std::sqrt(x*x + y*y + z*z);
+            const float dist = std::sqrt(x * x + y * y + z * z);
             if (dist < 1e-6f) continue;
 
-            // σ proporcional a la distancia, con mínimo físico
-            float sigma = std::max((float)min_noise_, (float)(rel_noise_ * dist));
-            float noise = sigma * dist_norm_(gen_);
-            float ratio = 1.0f + noise / dist;
+            // Radial noise: perturb range, preserve azimuth and elevation.
+            // ratio = 1 + Δr/r  →  (x',y',z') = ratio * (x,y,z)
+            const float sigma = std::max(min_noise_, rel_noise_ * dist);
+            const float ratio = 1.0f + (sigma * dist_norm_(gen_)) / dist;
 
             *out_x = x * ratio;
             *out_y = y * ratio;
@@ -77,17 +81,19 @@ private:
         pub_->publish(out);
     }
 
-    double rel_noise_, min_noise_;
+    float rel_noise_;
+    float min_noise_;
+
     std::mt19937 gen_;
     std::normal_distribution<float> dist_norm_;
 
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr    pub_;
 };
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<LivoxNoiseNode>());
+    rclcpp::spin(std::make_shared<NoisyLivoxMid70Node>());
     rclcpp::shutdown();
     return 0;
 }
