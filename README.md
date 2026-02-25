@@ -44,6 +44,8 @@ This repository provides a drop‑in ROS 2 Humble package with a hospital floor 
 - **Datasheet‑driven parameters instead of “nice‑looking” noise**: IMU bias and Livox LiDAR accuracy are taken from Allan variance and vendor specs, so the resulting covariances are defensible in a metrology or code review context.  
 - **Hospital‑specific world instead of generic maze**: The world models typical hospital furniture and equipment so that occlusions, multipath and narrow corridors resemble the eventual deployment domain. This avoids tuning SLAM on unrealistic, open‑space scenes.  
 - **ROS 2 Humble + Ignition Fortress**: This combination matches current industrial ROS deployments and provides long‑term support, modern physics, and a stable API for ros_gz_bridge.
+- **Reliable QoS on all noise nodes**: all noise node subscribers and publishers use `rclcpp::QoS(10)` (Reliable), matching the `parameter_bridge` default output. Using `SensorDataQoS` (BestEffort) here would work but is incorrect
+  for an EKF consumer that requires message delivery guarantees. Run `ros2 topic info <topic> --verbose` to verify QoS compatibility if swapping the bridge implementation.
 
 ---
 
