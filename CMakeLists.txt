@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(hospital_sim)
+project(hospital-agv-sim)
 
 # C++ standard
 set(CMAKE_CXX_STANDARD 17)

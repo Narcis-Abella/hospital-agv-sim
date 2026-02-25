@@ -44,8 +44,8 @@ public:
         gen_       = std::mt19937(std::random_device{}());
         dist_norm_ = std::normal_distribution<double>(0.0, 1.0);
 
-        // SensorDataQoS matches Gazebo bridge output (best-effort, volatile).
-        auto qos = rclcpp::SensorDataQoS();
+        // Reliable QoS: matches parameter_bridge default output.
+        auto qos = rclcpp::QoS(10);
         sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
             "/imu_raw", qos,
             std::bind(&NoisyImuNode::callback, this, std::placeholders::_1));

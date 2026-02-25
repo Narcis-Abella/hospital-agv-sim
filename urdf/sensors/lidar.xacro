@@ -6,7 +6,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="1.5708 0 0"/>
         <geometry>
-          <mesh filename="package://hospital_sim/meshes/lidar_Link.STL" />
+          <mesh filename="package://hospital-agv-sim/meshes/lidar_Link.STL" />
         </geometry>
         <material name="green"/>
       </visual>
@@ -14,7 +14,7 @@
       <collision>
         <origin xyz="0 0 0" rpy="1.5708 0 0"/>
         <geometry>
-          <mesh filename="package://hospital_sim/meshes/lidar_Link.STL" />
+          <mesh filename="package://hospital-agv-sim/meshes/lidar_Link.STL" />
         </geometry>
       </collision>
     </link>

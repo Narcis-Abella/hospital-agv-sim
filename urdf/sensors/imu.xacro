@@ -5,7 +5,7 @@
     <link name="imu_link">
       <visual>
           <geometry>
-              <mesh filename="package://hospital_sim/meshes/imu_Link.STL" />
+              <mesh filename="package://hospital-agv-sim/meshes/imu_Link.STL" />
           </geometry>
           <material name="red"/>
           <origin xyz="0 0 0" rpy="0 -1.5708 0"/>

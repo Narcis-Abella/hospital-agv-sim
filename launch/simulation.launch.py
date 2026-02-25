@@ -16,7 +16,7 @@ import xacro
 
 
 def generate_launch_description():
-    package_name = "hospital_sim"
+    package_name = "hospital-agv-sim"
     package_share = get_package_share_directory(package_name)
     pkg_ros_gz_sim = get_package_share_directory("ros_gz_sim")
 
@@ -49,12 +49,12 @@ def generate_launch_description():
 
     # Inform the user when running in headless mode and how to enable the GUI.
     gui_command_hint = (
-        "ros2 launch hospital_sim simulation.launch.py headless:=false"
+        "ros2 launch hospital-agv-sim simulation.launch.py headless:=false"
     )
     headless_info = LogInfo(
         condition=IfCondition(headless_cfg),
         msg=(
-            "[hospital_sim] Launch is running in HEADLESS mode (no GUI). "
+            "[hospital-agv-sim] Launch is running in HEADLESS mode (no GUI). "
             "Run `" + gui_command_hint + "` to start the simulation with "
             "the graphical client enabled."
         ),
@@ -156,7 +156,7 @@ def generate_launch_description():
     # ── 6. SENSOR NOISE NODES (C++) ───────────────────────────────────────────
     # IMU: reads /imu_raw, applies Gauss–Markov noise, publishes /imu/data
     noisy_imu_node = Node(
-        package="hospital_sim",
+        package="hospital-agv-sim",
         executable="noisy_imu_cpp",
         name="noisy_imu_node",
         parameters=[{"use_sim_time": True, "update_rate": 100.0}],
@@ -165,7 +165,7 @@ def generate_launch_description():
 
     # 2D LiDAR: reads /scan_raw, applies range-dependent noise, publishes /scan
     noisy_lidar_node = Node(
-        package="hospital_sim",
+        package="hospital-agv-sim",
         executable="noisy_lidar_cpp",
         name="noisy_lidar_node",
         parameters=[
@@ -180,7 +180,7 @@ def generate_launch_description():
 
     # Wheel odometry: reads /odom_raw, applies slip + yaw drift, publishes /odom
     noisy_odom_node = Node(
-        package="hospital_sim",
+        package="hospital-agv-sim",
         executable="noisy_odom_cpp",
         name="noisy_odom_node",
         parameters=[
@@ -196,7 +196,7 @@ def generate_launch_description():
 
     # Livox Mid-70: reads /livox_mid70/points_raw, publishes /livox_mid70/points
     noisy_mid70_node = Node(
-        package="hospital_sim",
+        package="hospital-agv-sim",
         executable="noisy_livox_mid70_cpp",
         name="noisy_livox_mid70_node",
         parameters=[
@@ -211,7 +211,7 @@ def generate_launch_description():
 
     # Livox Mid-360: reads /livox_mid360/points_raw, publishes /livox_mid360/points
     noisy_mid360_node = Node(
-        package="hospital_sim",
+        package="hospital-agv-sim",
         executable="noisy_livox_mid360_cpp",
         name="noisy_livox_mid360_node",
         parameters=[

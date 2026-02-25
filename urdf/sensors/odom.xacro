@@ -12,7 +12,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-           <mesh filename="package://hospital_sim/meshes/rueda_izquierda_Link.STL" />
+           <mesh filename="package://hospital-agv-sim/meshes/rueda_izquierda_Link.STL" />
         </geometry>
         <material name="black"/>
       </visual>
@@ -42,7 +42,7 @@
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
-           <mesh filename="package://hospital_sim/meshes/rueda_derecha_Link.STL" />
+           <mesh filename="package://hospital-agv-sim/meshes/rueda_derecha_Link.STL" />
         </geometry>
         <material name="black"/>
       </visual>
