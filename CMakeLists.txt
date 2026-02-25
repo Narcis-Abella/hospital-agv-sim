@@ -1,44 +1,46 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.22)
 project(hospital_sim)
+
+# C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# IDE / clangd support
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# ─── Dependencias de Compilación ───
+# ── Build dependencies ────────────────────────────────────────────────────────
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)       # Necesario para compilar los nodos C++
-find_package(sensor_msgs REQUIRED)  # Necesario para mensajes Imu y LaserScan
-find_package(nav_msgs REQUIRED)     # Necesario para Odometry (aunque sea en python, buena práctica)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 
-# Nota: ros_gz_sim y bridge son dependencias de ejecución, no necesitas find_package aquí
-# a menos que enlaces librerías de C++ de Gazebo directamente.
+# Note: ros_gz_sim and ros_gz_bridge are runtime dependencies only.
+# No find_package needed unless linking against their C++ libraries directly.
 
-# ─── 1. Compilación de Nodos C++ ───
-
-# Nodo IMU (C++)
+# ── C++ noise nodes ───────────────────────────────────────────────────────────
 add_executable(noisy_imu_cpp src/noisy_imu.cpp)
 ament_target_dependencies(noisy_imu_cpp rclcpp sensor_msgs)
 
-# Nodo LiDAR (C++)
 add_executable(noisy_lidar_cpp src/noisy_lidar.cpp)
 ament_target_dependencies(noisy_lidar_cpp rclcpp sensor_msgs)
 
-# Nodo Odometría (C++)
 add_executable(noisy_odom_cpp src/noisy_odom.cpp)
-ament_target_dependencies(noisy_odom_cpp rclcpp nav_msgs)
+ament_target_dependencies(noisy_odom_cpp rclcpp nav_msgs geometry_msgs tf2_ros)
 
-# Nodo Livox Mid-70 (C++)
 add_executable(noisy_livox_mid70_cpp src/noisy_livox_mid70.cpp)
 ament_target_dependencies(noisy_livox_mid70_cpp rclcpp sensor_msgs)
 
-# Nodo Livox Mid-360 (C++)
 add_executable(noisy_livox_mid360_cpp src/noisy_livox_mid360.cpp)
 ament_target_dependencies(noisy_livox_mid360_cpp rclcpp sensor_msgs)
 
-# ─── 2. Instalación ───
-
-# A) Instalar ejecutables C++
+# ── Install: C++ executables ──────────────────────────────────────────────────
 install(TARGETS
   noisy_imu_cpp
   noisy_lidar_cpp
@@ -48,7 +50,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# B) Instalar scripts Python (Legacy/Híbrido)
+# ── Install: legacy Python prototypes (reference / regression only) ───────────
 install(PROGRAMS
   scripts/legacy/noisy_odom.py
   scripts/legacy/noisy_imu.py
@@ -57,13 +59,14 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# C) Instalar carpetas de recursos (launch, meshes, etc.)
-install(DIRECTORY 
-  launch 
-  worlds 
+# ── Install: resource directories ─────────────────────────────────────────────
+install(DIRECTORY
+  launch
+  worlds
   urdf
   meshes
   models
+  docs
   DESTINATION share/${PROJECT_NAME}
 )
 
