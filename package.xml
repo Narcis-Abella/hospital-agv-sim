@@ -14,7 +14,7 @@
   <maintainer email="narcisabellal@iqs.url.edu">Narcis Abella</maintainer>
   <license>MIT</license>
 
-  <url type="repository">https://github.com/Narcis-Abella/hospital_sim</url>
+  <url type="repository">https://github.com/Narcis-Abella/hospital-agv-sim</url>
 
   <!-- Build dependencies -->
   <buildtool_depend>ament_cmake</buildtool_depend>
