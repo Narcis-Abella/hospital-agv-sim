@@ -7,10 +7,7 @@
 class NoisyLidarNode : public rclcpp::Node {
 public:
     NoisyLidarNode() : Node("noisy_lidar_node") {
-        this->declare_parameter("rel_noise", 0.01);   // fractional range noise (1%)
         this->declare_parameter("min_noise", 0.003f); // minimum noise floor (3 mm)
-
-        rel_noise_ = static_cast<float>(this->get_parameter("rel_noise").as_double());
         min_noise_ = static_cast<float>(this->get_parameter("min_noise").as_double());
 
         gen_       = std::mt19937(std::random_device{}());
@@ -24,8 +21,7 @@ public:
         pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>("/scan", qos);
 
         RCLCPP_INFO(this->get_logger(),
-            "2D LiDAR noise node started — model: proportional Gaussian "
-            "σ = max(%.3f m, %.2f·r)", min_noise_, rel_noise_);
+            "2D LiDAR noise node started — model: piecewise range-proportional (RPLiDAR A2M12 spec)");
     }
 
 private:
@@ -39,22 +35,28 @@ private:
             // Skip invalid returns (inf, NaN, out-of-range).
             if (!std::isfinite(r) || r <= 0.0f) continue;
 
-            // Range-proportional Gaussian: σ = max(min_noise, rel_noise * r).
-            // Derived from RPLidar S2 ranging accuracy spec (±1% of distance).
-            const float sigma   = std::max(min_noise_, rel_noise_ * r);
+            // Piecewise range-proportional Gaussian noise (RPLiDAR A2M12 datasheet).
+            // r <= 3m    -> 1%
+            // 3m < r <= 5m -> 2%
+            // r > 5m     -> 2.5%
+            float rel_noise;
+            if (r <= 3.0f) {
+                rel_noise = 0.01f;
+            } else if (r <= 5.0f) {
+                rel_noise = 0.02f;
+            } else {
+                rel_noise = 0.025f;
+            }
+
+            const float sigma   = std::max(min_noise_, rel_noise * r);
             const float noisy_r = r + sigma * dist_norm_(gen_);
 
             out.ranges[i] = std::clamp(noisy_r, out.range_min, out.range_max);
-
-            // Note: intensity values are left unmodified (ideal).
-            // If reflectance-based segmentation is added downstream,
-            // intensity noise should be modelled here.
         }
 
         pub_->publish(out);
     }
 
-    float rel_noise_;
     float min_noise_;
 
     std::mt19937 gen_;
