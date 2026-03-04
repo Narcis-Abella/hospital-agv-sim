@@ -4,32 +4,16 @@
 #include <random>
 #include <cmath>
 
-// Applies range-proportional radial Gaussian noise to Livox Mid-70 PointCloud2.
-//
-// Noise model: σ = max(min_noise, rel_noise * r), applied along line-of-sight.
-// Parameters match Livox Mid-70 datasheet ranging accuracy (±2 cm at 1–6 m).
-//
-// Topic routing:
-//   /livox_mid70/points_raw → [this node] → /livox_mid70/points
 class NoisyLivoxMid70Node : public rclcpp::Node {
 public:
     NoisyLivoxMid70Node() : Node("noisy_livox_mid70_node") {
-
-        // rel_noise: fraction of range used as σ (0.5% ≈ 2 cm at 4 m)
-        // min_noise: absolute noise floor regardless of range (2 mm)
-        this->declare_parameter("rel_noise", 0.005);
         this->declare_parameter("min_noise", 0.002);
-
-        rel_noise_ = static_cast<float>(this->get_parameter("rel_noise").as_double());
         min_noise_ = static_cast<float>(this->get_parameter("min_noise").as_double());
 
         gen_       = std::mt19937(std::random_device{}());
         dist_norm_ = std::normal_distribution<float>(0.0f, 1.0f);
 
-        // Reliable QoS: matches parameter_bridge default output.
-        // Verify with: ros2 topic info /livox_mid70/points_raw --verbose
         auto qos = rclcpp::QoS(10);
-
         sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
             "/livox_mid70/points_raw", qos,
             std::bind(&NoisyLivoxMid70Node::callback, this, std::placeholders::_1));
@@ -37,15 +21,11 @@ public:
             "/livox_mid70/points", qos);
 
         RCLCPP_INFO(this->get_logger(),
-            "Livox Mid-70 noise node started — model: radial Gaussian "
-            "σ = max(%.3f m, %.1f%% of r)",
-            min_noise_, rel_noise_ * 100.0f);
+            "Livox Mid-70 noise node started — model: piecewise radial Gaussian (datasheet-informed)");
     }
 
 private:
     void callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-        // Shallow copy: same field layout, stride, and header.
-        // Only x/y/z bytes are modified via iterators.
         auto out = *msg;
 
         sensor_msgs::PointCloud2ConstIterator<float> in_x(*msg, "x");
@@ -62,15 +42,17 @@ private:
         {
             const float x = *in_x, y = *in_y, z = *in_z;
 
-            // Pass through invalid returns unchanged.
             if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) continue;
 
             const float dist = std::sqrt(x * x + y * y + z * z);
             if (dist < 1e-6f) continue;
 
-            // Radial noise: perturb range, preserve azimuth and elevation.
-            // ratio = 1 + Δr/r  →  (x',y',z') = ratio * (x,y,z)
-            const float sigma = std::max(min_noise_, rel_noise_ * dist);
+            // Piecewise relative noise for Mid-70 (Longer range sensor):
+            // dist <= 20m -> 0.1% (yields ~2cm @ 20m)
+            // dist > 20m  -> 0.3% (yields increased noise at long range)
+            float rel_noise = (dist <= 20.0f) ? 0.001f : 0.003f;
+
+            const float sigma = std::max(min_noise_, rel_noise * dist);
             const float ratio = 1.0f + (sigma * dist_norm_(gen_)) / dist;
 
             *out_x = x * ratio;
@@ -81,9 +63,7 @@ private:
         pub_->publish(out);
     }
 
-    float rel_noise_;
     float min_noise_;
-
     std::mt19937 gen_;
     std::normal_distribution<float> dist_norm_;
 
