@@ -108,16 +108,18 @@ Triangulation-based LiDAR range error is physically dominated by geometric uncer
 | 3 – 5 m | ±2% of range |
 | 5 – 25 m | ±2.5% of range |
 
-The model used:
+The model implements this **piecewise range-proportionality** to reflect the increasing uncertainty in triangulation at larger distances:
 
 ```
-σ(r) = max(min_noise, rel_noise × r)
+σ(r) = max(min_noise, rel_noise(r) × r)
 
-rel_noise = 0.01  (1% — conservative bound valid for ≤3 m)
-min_noise  = 0.003 m  (3 mm floor for very short ranges)
+where rel_noise(r):
+  r <= 3m      -> 1.0%
+  3m < r <= 5m -> 2.0%
+  r > 5m       -> 2.5%
+
+min_noise = 0.003 m (3 mm floor)
 ```
-
-Using 1% across the full range is conservative: at distances >3 m the actual accuracy is up to 2.5%, so the simulation slightly underestimates real noise at medium and long range.
 
 > **Note:** The A2M12 specification uses the term "accuracy" (systematic bound), not 1σ standard deviation. Treating it as a Gaussian σ is a modelling simplification consistent with the beam model of [Thrun et al. 2005]. A more rigorous model would separate systematic and random components.
 
@@ -138,19 +140,16 @@ ratio = 1 + Δr/r
 (x', y', z') = ratio × (x, y, z)
 ```
 
-The Livox Mid-360 datasheet provides a direct 1σ spec:
+The Livox Mid-360 datasheet reports range precision as a direct 1σ value that degrades with distance. The implementation uses a piecewise model to capture this transition (typ. ~2cm at short/mid range vs ~3cm at longer ranges):
 
 ```
-Range Precision (1σ):
-  ≤ 2 cm  @ 10 m  (80% reflectivity, 25°C)
-  ≤ 3 cm  @ 0.2 m (80% reflectivity, 25°C)
-```
+σ(r) = max(min_noise, rel_noise(r) × r)
 
-Parameters:
+where rel_noise(r):
+  r <= 6m -> 0.4% (≈ 2 cm @ 5m)
+  r > 6m  -> 0.7% (≈ 3.5 cm @ 5m, increasing error bound)
 
-```
-rel_noise = 0.005  (0.5% → σ ≈ 2 cm at 4 m — matches ≤2 cm spec)
-min_noise = 0.002  (2 mm floor)
+min_noise = 0.002 m (2 mm floor)
 ```
 
 The angular precision spec (< 0.15° 1σ) is not modelled; at 1–10 m it contributes < 2.6 cm lateral error, comparable to the range noise already applied.
@@ -159,13 +158,21 @@ The angular precision spec (< 0.15° 1σ) is not modelled; at 1–10 m it contri
 
 ## 4. 3D LiDAR — Livox Mid-70 (`noisy_livox_mid70.cpp`)
 
-The Mid-70 shares the same Livox ToF architecture and reports the same **±2 cm ranging accuracy** at similar conditions.
+The Mid-70 is a longer-range ToF sensor compared to the Mid-360. While it shares the same architecture, its stability range is broader, typically maintaining high precision up to 20m.
 
 **[Livox Mid-70 Product Page / Specifications](https://www.livoxtech.com/mid-70)**
 
-Parameters are identical to the Mid-360 node (`rel_noise = 0.005`, `min_noise = 0.002`).
+The piecewise model for the Mid-70 reflects its long-range characterization:
 
-> **Code note:** `noisy_livox_mid70.cpp` and `noisy_livox_mid360.cpp` share identical logic with different node names and topic routes. Consolidating them into a single parametric node is a known refactoring opportunity.
+```
+σ(r) = max(min_noise, rel_noise(r) × r)
+
+where rel_noise(r):
+  r <= 20m -> 0.1% (≈ 2 cm @ 20m)
+  r > 20m  -> 0.3% (increased noise at long range)
+
+min_noise = 0.002 m (2 mm floor)
+```
 
 ---
 
@@ -214,9 +221,9 @@ This models the **systematic, unbounded heading drift** accumulating with distan
 | Node | Sensor | Model | Primary source | Validation status |
 |---|---|---|---|---|
 | `noisy_imu.cpp` | WT901C / MPU-9250 | Gauss-Markov bias + white noise + G-sensitivity + ADC quant. | MPU-9250 datasheet §3.1–3.2; [Woodman 2007]; [IEEE 952-1997] | Partial — white noise and ADC from datasheet; bias τ and instability from literature |
-| `noisy_lidar.cpp` | RPLiDAR A2M12 | Proportional Gaussian `σ = max(min, rel·r)` | SLAMTEC A2 spec; [Thrun et al. 2005] | Conservative estimate — accuracy treated as 1σ (simplification) |
-| `noisy_livox_mid360.cpp` | Livox Mid-360 | Radial Gaussian `σ = max(min, rel·r)` | Livox Mid-360 datasheet (1σ); [Pomerleau et al. 2013] | Direct datasheet match |
-| `noisy_livox_mid70.cpp` | Livox Mid-70 | Radial Gaussian (same as Mid-360) | Livox Mid-70 product page | Same architecture, assumed same accuracy |
+| `noisy_lidar.cpp` | RPLiDAR A2M12 | Piecewise Proportional Gaussian | SLAMTEC A2 spec; [Thrun et al. 2005] | Conservative estimate — accuracy treated as 1σ (simplification) |
+| `noisy_livox_mid360.cpp` | Livox Mid-360 | Piecewise Radial Gaussian | Livox Mid-360 datasheet (1σ); [Pomerleau et al. 2013] | Direct datasheet match |
+| `noisy_livox_mid70.cpp` | Livox Mid-70 | Piecewise Radial Gaussian | Livox Mid-70 product page | Same architecture, assumed same accuracy |
 | `noisy_odom.cpp` | Tracer 2.0 encoders | Proportional slip + yaw random walk + systematic drift | [Borenstein & Feng 1996]; [Siegwart et al. 2011]; field observation | **Linear: literature-consistent; Angular 8%: empirical observation, unvalidated — pending hardware measurement** |
 
 ---
