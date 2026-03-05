@@ -48,7 +48,7 @@ This repository provides a drop‑in ROS 2 Humble package with:
 
 ## Architecture & Data Flow
 
-![Sensor Noise Pipeline](docs/noisy_diagram.svg)
+![Sensor Noise Pipeline](docs/noisy_diagram.PNG)
 
 ---
 
