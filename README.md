@@ -56,9 +56,7 @@ This repository provides a drop‑in ROS 2 Humble package with:
 
 Comparison of the Livox Mid-360 point cloud in RViz2: **Raw Simulation** (left) vs. **Realistic Noise Model** (right). Note the radial "spreading" of points as distance increases, mimicking actual sensor behavior.
 
-<div align="center">
-  <video src="docs/livox_raw_vs_noisy.mp4" width="100%" autoplay loop muted></video>
-</div>
+https://github.com/user-attachments/assets/5c1755df-4171-4f2f-89de-feae12ada0e5
 
 ---
 
