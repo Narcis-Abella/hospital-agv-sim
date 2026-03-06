@@ -64,29 +64,15 @@ All parameter choices, unit conversions and detailed justifications are document
 
 ## Architecture and data flow
 
-High-level data flow for each sensor:
+![Sensor Noise Pipeline](docs/noisy_diagram.png)
 
-```text
-Gazebo plugin  -->  /gz/topic
-                      |
-                      v
-ros_gz_bridge   -->  /sensor_raw
-                      |
-                      v
-C++ noise node  -->  /sensor
-```
+The diagram shows how ideal simulation topics are bridged into ROS 2 and then passed through the C++ noise nodes before reaching the localization stack.
 
-- Gazebo publishes ideal data.
-- `ros_gz_bridge` exposes it to ROS 2.
-- The noise node subscribes to `*_raw`, applies the chosen model, and publishes standard `sensor_msgs` with covariances filled in.
-
-More detail, including exact formulas and covariance entries, is in `docs/architecture.md`.
+More detail, including formulas and covariance entries, is in `docs/architecture.md`.
 
 ---
 
 ## Visuals and tech stack
-
-![Sensor Noise Pipeline](docs/noisy_diagram.png)
 
 Comparison of the Livox Mid-360 point cloud in RViz2: **Raw Simulation** (left) vs. **Realistic Noise Model** (right). As distance increases, the point cloud spreads radially in a way that looks much closer to the real sensor.
 
