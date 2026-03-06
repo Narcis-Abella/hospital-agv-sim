@@ -69,7 +69,7 @@ All parameter choices, unit conversions and detailed justifications are in `docs
 
 ## Visuals and tech stack
 
-Comparison of the Livox Mid-360 point cloud in RViz2: **Raw Simulation** (left) vs. **Realistic Noise Model** (right). As distance increases, the point cloud spreads radially in a way that looks much closer to the real sensor.
+Comparison of the Livox Mid-360 point cloud in RViz2: **Realistic Noise Model** (left) vs. **Raw Simulation** (right) . As distance increases, the point cloud spreads radially in a way that looks much closer to the real sensor.
 
 <div align="center">
   <img src="docs/livox_noisy_vs_raw.gif" width="100%" alt="Livox Noise Model Comparison">
